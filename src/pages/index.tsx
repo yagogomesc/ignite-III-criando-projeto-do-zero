@@ -9,6 +9,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
+import { FiCalendar, FiUser } from 'react-icons/fi';
+import { useEffect, useState } from 'react';
 
 interface Post {
   uid?: string;
@@ -30,6 +32,39 @@ interface HomeProps {
 }
 
 export default function Home({ postsPagination }: HomeProps) {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [nextPage, setNextPage] = useState('');
+
+  useEffect(() => {
+    setPosts(postsPagination.results);
+    setNextPage(postsPagination.next_page);
+  }, [postsPagination.results, postsPagination.next_page]);
+
+  async function handlePagination() {
+    await fetch(nextPage)
+      .then(response => response.json())
+      .then(data => {
+        const formattedPosts = data.results.map(post => {
+          return {
+            uid: post.uid,
+            first_publication_date: format(
+              new Date(post.first_publication_date),
+              'dd MMM y',
+              { locale: ptBR }
+            ),
+            data: {
+              title: post.data.title,
+              subtitle: post.data.subtitle,
+              author: post.data.author,
+            },
+          };
+        });
+
+        setPosts([...posts, ...formattedPosts]);
+        setNextPage(data.next_page);
+      });
+  }
+
   return (
     <>
       <Head>
@@ -40,25 +75,32 @@ export default function Home({ postsPagination }: HomeProps) {
           <img src="/images/logo.svg" alt="logo" />
         </header>
         <div className={styles.posts}>
-          {postsPagination.results.map(post => (
+          {posts.map(post => (
             <div className={styles.post} key={post.uid}>
-              <Link href={`/posts/${post.uid}`}>
+              <Link href={`/post/${post.uid}`}>
                 <a>{post.data.title}</a>
               </Link>
               <p>{post.data.subtitle}</p>
               <div>
                 <p>
-                  <img src="/images/calendar.svg" alt="calendar" />{' '}
-                  {post.first_publication_date}
+                  <FiCalendar />
+                  {format(new Date(post.first_publication_date), 'dd MMM y', {
+                    locale: ptBR,
+                  })}
                 </p>
                 <p>
-                  <img src="/images/user.svg" alt="user" /> {post.data.author}
+                  <FiUser /> {post.data.author}
                 </p>
               </div>
             </div>
           ))}
-          {postsPagination.next_page !== null && (
-            <button type="button" className={styles.loadMoreButton}>
+
+          {nextPage && (
+            <button
+              type="button"
+              className={styles.loadMoreButton}
+              onClick={handlePagination}
+            >
               Carregar mais posts
             </button>
           )}
@@ -72,25 +114,27 @@ export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient();
   const postsResponse = await prismic.query(
     [Prismic.predicates.at('document.type', 'posts')],
-    { fetch: ['posts.title', 'posts.subtitle', 'posts.author'], pageSize: 1 }
+    { fetch: ['posts.title', 'posts.subtitle', 'posts.author'], pageSize: 10 }
   );
 
-  const postsPagination = {
-    next_page: postsResponse.next_page,
-    results: postsResponse.results.map(post => ({
-      uid: post.uid,
-      first_publication_date: format(
-        new Date(post.first_publication_date),
-        'dd MMM y',
-        { locale: ptBR }
-      ),
-      data: {
-        title: post.data.title,
-        subtitle: post.data.subtitle,
-        author: post.data.author,
-      },
-    })),
-  };
+  const postsPagination = [
+    {
+      next_page: postsResponse.next_page,
+      results: postsResponse.results.map(post => ({
+        uid: post.uid,
+        first_publication_date: format(
+          new Date(post.first_publication_date),
+          'dd MMM y',
+          { locale: ptBR }
+        ),
+        data: {
+          title: post.data.title,
+          subtitle: post.data.subtitle,
+          author: post.data.author,
+        },
+      })),
+    },
+  ];
 
   return {
     props: { postsPagination },
