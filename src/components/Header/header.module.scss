@@ -1,1 +1,12 @@
-// TODO
+.headerContainer {
+  max-width: 720px;
+  margin: 1rem auto;
+
+  img {
+    margin: 0 auto;
+    border: 0;
+    cursor: pointer;
+    background: none;
+    padding: 1rem 1rem 1rem 2rem;
+  }
+}
