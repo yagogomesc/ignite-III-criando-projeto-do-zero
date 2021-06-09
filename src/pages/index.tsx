@@ -70,8 +70,8 @@ export default function Home({ postsPagination }: HomeProps) {
       <Head>
         <title>Home | Spacetravelling.</title>
       </Head>
-      <main className={styles.container}>
-        <header>
+      <main className={commonStyles.container}>
+        <header className={commonStyles.homeHeader}>
           <img src="/images/logo.svg" alt="logo" />
         </header>
         <div className={styles.posts}>
@@ -114,30 +114,26 @@ export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient();
   const postsResponse = await prismic.query(
     [Prismic.predicates.at('document.type', 'posts')],
-    { fetch: ['posts.title', 'posts.subtitle', 'posts.author'], pageSize: 10 }
+    { fetch: ['posts.title', 'posts.subtitle', 'posts.author'], pageSize: 20 }
   );
 
-  const postsPagination = [
-    {
-      next_page: postsResponse.next_page,
-      results: postsResponse.results.map(post => ({
-        uid: post.uid,
-        first_publication_date: format(
-          new Date(post.first_publication_date),
-          'dd MMM y',
-          { locale: ptBR }
-        ),
-        data: {
-          title: post.data.title,
-          subtitle: post.data.subtitle,
-          author: post.data.author,
-        },
-      })),
+  const posts = postsResponse.results.map(post => ({
+    uid: post.uid,
+    first_publication_date: post.first_publication_date,
+    data: {
+      title: post.data.title,
+      subtitle: post.data.subtitle,
+      author: post.data.author,
     },
-  ];
+  }));
 
   return {
-    props: { postsPagination },
-    revalidate: 60 * 60 * 24,
+    props: {
+      postsPagination: {
+        next_page: postsResponse.next_page,
+        results: posts,
+      },
+    },
+    revalidate: 60 * 60 * 24, // 24 hours
   };
 };
