@@ -1,1 +1,11 @@
-// TODO
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 2rem;
+
+  header {
+    &.homeHeader {
+      margin-top: 4rem;
+    }
+  }
+}
