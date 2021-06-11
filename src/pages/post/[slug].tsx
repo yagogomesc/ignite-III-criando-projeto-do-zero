@@ -14,8 +14,10 @@ import ptBR from 'date-fns/locale/pt-BR';
 import Prismic from '@prismicio/client';
 import { useRouter } from 'next/router';
 import Comments from '../../components/Comments';
+import PreviewButton from '../../components/PreviewButton';
 
 interface Post {
+  uid?: string;
   first_publication_date: string | null;
   data: {
     title: string;
@@ -35,10 +37,15 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  preview: boolean;
 }
 
-export default function Post({ post }: PostProps) {
+export default function Post({ post, preview }: PostProps) {
   const router = useRouter();
+
+  if (router.isFallback) {
+    return <p>Carregando...</p>;
+  }
 
   const readingTime = post.data.content.reduce((acc, item) => {
     const bodyTextLenght = RichText.asText(item.body).split(/\w+/).length;
@@ -47,10 +54,6 @@ export default function Post({ post }: PostProps) {
 
     return acc + time;
   }, 0);
-
-  if (router.isFallback) {
-    return <p>Carregando...</p>;
-  }
 
   return (
     <>
@@ -95,6 +98,8 @@ export default function Post({ post }: PostProps) {
         </article>
 
         <Comments />
+
+        {preview && <PreviewButton />}
       </main>
     </>
   );
@@ -118,14 +123,21 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-export const getStaticProps: GetStaticProps = async ({ params }) => {
+export const getStaticProps: GetStaticProps = async ({
+  params,
+  preview = false,
+  previewData,
+}) => {
   const { slug } = params;
 
   const prismic = getPrismicClient();
-  const response = await prismic.getByUID('posts', String(slug), {});
+  const response = await prismic.getByUID('posts', String(slug), {
+    fetch: '*',
+    ref: previewData?.ref ?? null,
+  });
 
   const post = {
-    uid: response.uid,
+    uid: response?.uid,
     first_publication_date: response.first_publication_date,
     data: {
       title: response.data.title,
@@ -139,6 +151,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   };
 
   return {
-    props: { post },
+    props: { post, preview },
+    revalidate: 60 * 60,
   };
 };
