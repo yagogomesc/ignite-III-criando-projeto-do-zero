@@ -56,3 +56,40 @@
     }
   }
 }
+
+.postDivider {
+  color: var(--body);
+  margin: 2rem 0;
+  opacity: 0.1;
+}
+
+.othersPosts {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  margin-bottom: 5rem;
+
+  .prevPost,
+  .nextPost {
+    display: flex;
+    flex-direction: column;
+
+    h3 {
+      color: var(--heading);
+      font-size: 1.125rem;
+      line-height: 1.375rem;
+    }
+
+    span {
+      margin-top: 0.5rem;
+      color: var(--highlight);
+      font-weight: 600;
+      font-size: 1rem;
+      line-height: 1.188rem;
+    }
+  }
+
+  .nextPost {
+    margin-right: 0;
+  }
+}

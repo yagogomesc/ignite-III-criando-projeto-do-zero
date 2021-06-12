@@ -38,9 +38,11 @@ interface Post {
 interface PostProps {
   post: Post;
   preview: boolean;
+  prevPost?: Post;
+  nextPost?: Post;
 }
 
-export default function Post({ post, preview }: PostProps) {
+export default function Post({ post, preview, nextPost, prevPost }: PostProps) {
   const router = useRouter();
 
   if (router.isFallback) {
@@ -97,6 +99,29 @@ export default function Post({ post, preview }: PostProps) {
           ))}
         </article>
 
+        {(prevPost || nextPost) && <hr className={styles.postDivider} />}
+
+        <div className={styles.othersPosts}>
+          {prevPost ? (
+            <div className={styles.prevPost}>
+              <a href={`/post/${prevPost.uid}`}>
+                <h3>{prevPost.data.title}</h3>
+                <span>Post anterior</span>
+              </a>
+            </div>
+          ) : (
+            <div></div>
+          )}
+          {nextPost && (
+            <div className={styles.nextPost}>
+              <a href={`/post/${nextPost.uid}`}>
+                <h3>{nextPost.data.title}</h3>
+                <span>Próximo post</span>
+              </a>
+            </div>
+          )}
+        </div>
+
         <Comments />
 
         {preview && <PreviewButton />}
@@ -150,8 +175,28 @@ export const getStaticProps: GetStaticProps = async ({
     },
   };
 
+  const prevPost =
+    (
+      await prismic.query(Prismic.Predicates.at('document.type', 'posts'), {
+        pageSize: 1,
+        after: `${response.id}`,
+        orderings: '[document.first_publication_date desc]',
+        ref: previewData?.ref ?? null,
+      })
+    ).results[0] || null;
+
+  const nextPost =
+    (
+      await prismic.query(Prismic.Predicates.at('document.type', 'posts'), {
+        pageSize: 1,
+        after: `${response.id}`,
+        orderings: '[document.first_publication_date]',
+        ref: previewData?.ref ?? null,
+      })
+    ).results[0] || null;
+
   return {
-    props: { post, preview },
+    props: { post, preview, prevPost, nextPost },
     revalidate: 60 * 60,
   };
 };
